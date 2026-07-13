@@ -1,8 +1,8 @@
 import numpy as np
-from data_generator import DataGenerator
-from data_processor import DataProcessor
-from evaluator import Evaluator
-from plotter import Plotter
+from .generator import DataGenerator
+from .processor import DataProcessor
+from .evaluator import Evaluator
+from .plotter import Plotter
 
 class MUSICTDE:
     """
@@ -61,8 +61,8 @@ class MUSICTDE:
     def create_multipath_channel(self, delays_samples, amplitudes):
         return self.data_gen.create_multipath_channel(delays_samples, amplitudes)
     
-    def transmit_through_channel(self, tx_signal, channel):
-        return self.data_gen.transmit_through_channel(tx_signal, channel)
+    def transmit_through_channel(self, tx_signal, channel, add_noise: bool = True, **overrides):
+        return self.data_gen.transmit_through_channel(tx_signal, channel, add_noise=add_noise, **overrides)
     
     def cross_correlation_tde(self, rx_signal, search_range_samples=(0, 50), threshold=0.3):
         return self.data_processor.cross_correlation_tde(rx_signal, search_range_samples, threshold)

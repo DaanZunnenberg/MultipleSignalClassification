@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "musicssvd"
+version = "0.1.0"
+description = "MUSIC/ESPRIT/Matrix-Pencil subspace time-delay estimation for WiFi L-LTF signals"
+requires-python = ">=3.9"
+dependencies = [
+    "numpy>=1.20",
+    "scipy>=1.6",
+    "matplotlib>=3.3",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=6.0"]
+
+[tool.setuptools.packages.find]
+where = ["src"]

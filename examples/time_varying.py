@@ -3,10 +3,9 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy import signal
-from scipy.signal import argrelextrema, find_peaks
+from scipy.signal import find_peaks
 
-from music_tde import MUSICTDE
+from musicssvd import MUSICTDE
 
 music_tde = MUSICTDE(
     channel_width_mhz=20,
@@ -19,50 +18,7 @@ music_tde = MUSICTDE(
     iq_phase_imbalance_deg=1.0        # 1 degree I/Q phase mismatch
 )
 
-def transmit(tx_signal, channel, freq_offset_hz=100.0, ts=5e-8, 
-             phase_noise_std=0.001,
-             iq_gain_imbalance=0.02,
-             iq_phase_imbalance_deg=1.0,
-             snr_db = 0.0,
-             add_noise = True):
-        rx_signal = signal.fftconvolve(tx_signal, channel, mode='full')
-
-        # Apply carrier frequency offset (CFO) across the received signal if specified
-        N = len(rx_signal)
-        if freq_offset_hz != 0.0 or phase_noise_std > 0.0:
-            n = np.arange(N)
-            # frequency offset term
-            if freq_offset_hz != 0.0:
-                cfo = np.exp(1j * 2.0 * np.pi * freq_offset_hz * n * ts)
-            else:
-                cfo = np.ones(N, dtype=complex)
-            # phase noise: cumulative Wiener-like phase noise (small increments)
-            if phase_noise_std > 0.0:
-                increments = np.random.randn(N) * phase_noise_std
-                phase_noise = np.cumsum(increments)
-                ph_noise = np.exp(1j * phase_noise)
-                # print("Adding phase noise!")
-            else:
-                ph_noise = np.ones(N, dtype=complex)
-            rx_signal = rx_signal * cfo * ph_noise
-
-        # Apply IQ imbalance if requested (simple gain & phase imbalance model)
-        if abs(iq_gain_imbalance) > 0.0 or abs(iq_phase_imbalance_deg) > 0.0:
-            g = iq_gain_imbalance
-            phi = np.deg2rad(iq_phase_imbalance_deg)
-            # apply gain imbalance and phase rotation between I and Q
-            i_part = np.real(rx_signal) * (1.0 + g)
-            q_part = np.imag(rx_signal) * (1.0 - g)
-            rx_signal = (i_part + 1j * q_part) * np.exp(1j * phi)
-
-        # Add AWGN
-        if add_noise:
-            signal_power = np.mean(np.abs(rx_signal)**2)
-            noise_power = signal_power / (10**(snr_db / 10)) if signal_power > 0 else 0.0
-            noise = np.sqrt(noise_power / 2) * (np.random.randn(N) + 1j * np.random.randn(N))
-        else:
-            noise = 0.0
-        return rx_signal + noise
+transmit = music_tde.transmit_through_channel
 
 
 clight = 3E8

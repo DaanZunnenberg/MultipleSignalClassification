@@ -120,24 +120,37 @@ class DataGenerator:
         
         return channel
     
-    def transmit_through_channel(self, tx_signal: np.ndarray, channel: np.ndarray) -> np.ndarray:
+    def transmit_through_channel(self, tx_signal: np.ndarray, channel: np.ndarray,
+                                  add_noise: bool = True, **overrides) -> np.ndarray:
         """Transmit signal through channel with AWGN and realistic hardware imperfections.
         Applies linear convolution, then applies CFO (frequency offset), phase noise, and IQ imbalance before adding noise.
+
+        Parameters:
+        add_noise: if False, skip AWGN (useful for building noiseless templates)
+        overrides: per-call overrides for freq_offset_hz, phase_noise_std,
+                   iq_gain_imbalance, iq_phase_imbalance_deg, snr_db
+                   (default to this instance's configured values)
         """
+        freq_offset_hz = overrides.get('freq_offset_hz', self.freq_offset_hz)
+        phase_noise_std = overrides.get('phase_noise_std', self.phase_noise_std)
+        iq_gain_imbalance = overrides.get('iq_gain_imbalance', self.iq_gain_imbalance)
+        iq_phase_imbalance_deg = overrides.get('iq_phase_imbalance_deg', self.iq_phase_imbalance_deg)
+        snr_db = overrides.get('snr_db', self.snr_db)
+
         rx_signal = signal.fftconvolve(tx_signal, channel, mode='full')
 
         # Apply carrier frequency offset (CFO) across the received signal if specified
         N = len(rx_signal)
-        if self.freq_offset_hz != 0.0 or self.phase_noise_std > 0.0:
+        if freq_offset_hz != 0.0 or phase_noise_std > 0.0:
             n = np.arange(N)
             # frequency offset term
-            if self.freq_offset_hz != 0.0:
-                cfo = np.exp(1j * 2.0 * np.pi * self.freq_offset_hz * n * self.ts)
+            if freq_offset_hz != 0.0:
+                cfo = np.exp(1j * 2.0 * np.pi * freq_offset_hz * n * self.ts)
             else:
                 cfo = np.ones(N, dtype=complex)
             # phase noise: cumulative Wiener-like phase noise (small increments)
-            if self.phase_noise_std > 0.0:
-                increments = np.random.randn(N) * self.phase_noise_std
+            if phase_noise_std > 0.0:
+                increments = np.random.randn(N) * phase_noise_std
                 phase_noise = np.cumsum(increments)
                 ph_noise = np.exp(1j * phase_noise)
             else:
@@ -145,17 +158,20 @@ class DataGenerator:
             rx_signal = rx_signal * cfo * ph_noise
 
         # Apply IQ imbalance if requested (simple gain & phase imbalance model)
-        if abs(self.iq_gain_imbalance) > 0.0 or abs(self.iq_phase_imbalance_deg) > 0.0:
-            g = self.iq_gain_imbalance
-            phi = np.deg2rad(self.iq_phase_imbalance_deg)
+        if abs(iq_gain_imbalance) > 0.0 or abs(iq_phase_imbalance_deg) > 0.0:
+            g = iq_gain_imbalance
+            phi = np.deg2rad(iq_phase_imbalance_deg)
             # apply gain imbalance and phase rotation between I and Q
             i_part = np.real(rx_signal) * (1.0 + g)
             q_part = np.imag(rx_signal) * (1.0 - g)
             rx_signal = (i_part + 1j * q_part) * np.exp(1j * phi)
 
+        if not add_noise:
+            return rx_signal
+
         # Add AWGN
         signal_power = np.mean(np.abs(rx_signal)**2)
-        noise_power = signal_power / (10**(self.snr_db / 10)) if signal_power > 0 else 0.0
+        noise_power = signal_power / (10**(snr_db / 10)) if signal_power > 0 else 0.0
         noise = np.sqrt(noise_power / 2) * (np.random.randn(N) + 1j * np.random.randn(N))
         return rx_signal + noise
     
