@@ -1,0 +1,5 @@
+numpy>=1.20
+scipy>=1.6
+matplotlib>=3.3
+# optional but recommended for testing and data handling
+pytest>=6.0
