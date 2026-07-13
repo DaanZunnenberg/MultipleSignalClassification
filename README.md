@@ -1,4 +1,4 @@
-# MusicSSVD
+# MultipleSignalClassification
 
 Subspace-based (MUSIC / ESPRIT / Matrix Pencil) time-delay estimation for
 IEEE 802.11n WiFi L-LTF signals.
