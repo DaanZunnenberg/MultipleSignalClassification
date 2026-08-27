@@ -10,3 +10,9 @@ plots/
 
 # Local Claude Code agent config (not meant to be shared/committed)
 .claude/
+
+# Test / tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
