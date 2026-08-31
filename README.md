@@ -27,3 +27,7 @@ pip install -e .
 python examples/basic_usage.py
 python scripts/run_tde.py
 ```
+
+---
+
+_Last reviewed: 2026-08-31._
